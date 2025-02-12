@@ -1,0 +1,7 @@
+How do you expose the images over the internet?
+Ans: CloudFront, which is CDN of amazon
+
+Why we are not using S3 URLs? Why we are using cloudFront.
+Ans: s3 URLs are expensive. cloudFront is significantly cheaper.
+
+https://d3lrd40ddgqzj7.cloudfront.net
