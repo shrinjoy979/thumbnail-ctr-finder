@@ -1,13 +1,48 @@
 import { PrismaClient } from "@prisma/client";
 import { Router } from "express";
 import jwt from "jsonwebtoken";
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { JWT_SECRET } from "..";
+import { authMiddleware } from "../middleware";
+
+const s3Client = new S3Client({
+    credentials: {
+        accessKeyId: process.env.ACCESS_KEY_ID ?? "",
+        secretAccessKey: process.env.ACCESS_SECRET ?? "",
+    },
+    region: "us-east-1"
+})
 
 const router = Router();
 const prismaClient = new PrismaClient();
-const JWT_SECRET = 'jsdsagdj';
+
+// @ts-ignore
+router.get("/presignedUrl", authMiddleware, async (req, res) => {
+    // @ts-ignore
+    const userId = req.userId;
+
+    const { url, fields } = await createPresignedPost(s3Client, {
+        Bucket: 'shrinjoy-development',
+        Key: `thumbnail-ctr-finder/${userId}/${Math.random()}/image.jpg`,
+        Conditions: [
+          ['content-length-range', 0, 5 * 1024 * 1024] // 5 MB max
+        ],
+        Fields: {
+            'content-Types': 'image/png'
+        },
+        Expires: 3600
+    })
+
+    res.json({
+        preSignedUrl: url,
+        fields
+    })
+})
 
 // Sigin with wallet
-router.post("signin", async (req, res) => {
+router.post("/signin", async (req, res) => {
     // Todo:: Add sign verification logic here
     const hardcodedWalletAddress = '6jzpRtC34tF5MmrZ1irtFtbSYaUdW7HH9FKLS6gKXeqr';
 
