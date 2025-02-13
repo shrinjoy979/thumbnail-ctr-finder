@@ -4,4 +4,6 @@ Ans: CloudFront, which is CDN of amazon
 Why we are not using S3 URLs? Why we are using cloudFront.
 Ans: s3 URLs are expensive. cloudFront is significantly cheaper.
 
+For database, we are using neon.tech
+
 https://d3lrd40ddgqzj7.cloudfront.net
