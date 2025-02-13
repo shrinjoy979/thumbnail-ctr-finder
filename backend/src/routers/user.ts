@@ -9,8 +9,8 @@ import { authMiddleware } from "../middleware";
 
 const s3Client = new S3Client({
     credentials: {
-        accessKeyId: "",
-        secretAccessKey: "",
+        accessKeyId: process.env.ACCESS_KEY_ID ?? "",
+        secretAccessKey: process.env.ACCESS_SECRET ?? "",
     },
     region: "us-east-1"
 })
