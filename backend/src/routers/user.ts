@@ -22,6 +22,65 @@ const router = Router();
 const prismaClient = new PrismaClient();
 
 // @ts-ignore
+router.get("/task", authMiddleware, async (req, res) => {
+    // @ts-ignore
+    const taskId: string = req.query.taskId;
+    // @ts-ignore
+    const userId: string = req.userId;
+
+    const taskDetails = await prismaClient.task.findFirst({
+        where: {
+            user_id: Number(userId),
+            id: Number(taskId)
+        },
+        include: {
+            options: true
+        }
+    })
+
+    if (!taskDetails) {
+        return res.status(411).json({
+            message: "You dont have access to this task"
+        })
+    }
+
+    // Todo: Can u make this faster?
+    const responses = await prismaClient.submission.findMany({
+        where: {
+            task_id: Number(taskId)
+        },
+        include: {
+            option: true
+        }
+    });
+
+    const result: Record<string, {
+        count: number;
+        option: {
+            imageUrl: string
+        }
+    }> = {};
+
+    taskDetails.options.forEach(option => {
+        result[option.id] = {
+            count: 0,
+            option: {
+                imageUrl: option.image_url ? option.image_url : ''
+            }
+        }
+    })
+
+    responses.forEach(r => {
+        result[r.option_id].count++;
+    });
+
+    res.json({
+        result,
+        taskDetails
+    })
+})
+
+// @ts-ignore
 router.post("/task", authMiddleware, async (req, res) => {
     //@ts-ignore
     const userId = req.userId
