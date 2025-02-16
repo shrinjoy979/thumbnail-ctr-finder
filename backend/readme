@@ -7,3 +7,13 @@ Ans: s3 URLs are expensive. cloudFront is significantly cheaper.
 For database, we are using neon.tech
 
 https://d3lrd40ddgqzj7.cloudfront.net
+
+// These two commands are mandatary to do any changes in database
+migration
+npx prisma migrate dev --name remove_option_id
+To re-generate the client
+npx prisma generate
+
+// To complie the code
+tsc -b
+node dist/index.js
