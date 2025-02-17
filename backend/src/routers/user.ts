@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { JWT_SECRET } from "..";
+import { JWT_SECRET } from "../config";
 import { authMiddleware } from "../middleware";
 import { createTaskInput } from "../types";
 

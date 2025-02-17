@@ -1,11 +1,42 @@
 import { PrismaClient } from "@prisma/client";
 import { Router } from "express";
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "..";
+import { workerMiddleware } from "../middleware";
+import { JWT_SECRET, WORKER_JWT_SECRET } from "../config";
 
-export const WORKER_JWT_SECRET = JWT_SECRET + "worker";
 const router = Router();
 const prismaClient = new PrismaClient();
+
+// @ts-ignore
+router.get("/nextTask", workerMiddleware, async (req, res) => {
+    // @ts-ignore
+    const userId = req.userId;
+
+    const task = await prismaClient.task.findFirst({
+        where: {
+            done: false,
+            submissions: {
+                none: {
+                    worker_id: userId
+                }
+            }
+        },
+        select:{
+            title: true,
+            options: true
+        }
+    })
+
+    if (!task) {
+        res.status(411).json({   
+            message: "No more tasks left for you to review"
+        })
+    } else {
+        res.json({   
+            task
+        })
+    }
+})
 
 // Sigin with wallet
 router.post("/signin", async (req, res) => {
