@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { workerMiddleware } from "../middleware";
-import { JWT_SECRET, WORKER_JWT_SECRET } from "../config";
+import { JWT_SECRET, TOTAL_DECIMALS, WORKER_JWT_SECRET } from "../config";
 import { getNextTask } from "../db";
 import { createSubmissionInput } from "../types";
 
@@ -27,13 +27,28 @@ router.post("/submission", workerMiddleware, async (req, res) => {
 
         const amount = (Number(task.amount) / TOTAL_SUBMISSIONS).toString();
 
-        const submission = await prismaClient.submission.create({
-            data: {
-                option_id: Number(parsedBody.data.selection),
-                worker_id: userId,
-                task_id: Number(parsedBody.data.taskId),
-                amount
-            }
+        const submission = await prismaClient.$transaction(async tx => {
+            const submission = await prismaClient.submission.create({
+                data: {
+                    option_id: Number(parsedBody.data.selection),
+                    worker_id: userId,
+                    task_id: Number(parsedBody.data.taskId),
+                    amount
+                }
+            })
+
+            await tx.worker.update({
+                where: {
+                    id: userId,
+                },
+                data: {
+                    pending_amount: {
+                        increment: Number(amount) * TOTAL_DECIMALS
+                    }
+                }
+            })
+
+            return submission;
         })
 
         const nextTask = await getNextTask(Number(userId));
