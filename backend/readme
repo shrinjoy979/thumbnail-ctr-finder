@@ -17,3 +17,5 @@ npx prisma generate
 // To complie the code
 tsc -b
 node dist/index.js
+
+// circular dependency
