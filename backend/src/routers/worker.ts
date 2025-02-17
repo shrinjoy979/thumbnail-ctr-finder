@@ -3,29 +3,59 @@ import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { workerMiddleware } from "../middleware";
 import { JWT_SECRET, WORKER_JWT_SECRET } from "../config";
+import { getNextTask } from "../db";
+import { createSubmissionInput } from "../types";
 
+const TOTAL_SUBMISSIONS = 100;
 const router = Router();
 const prismaClient = new PrismaClient();
 
 // @ts-ignore
-router.get("/nextTask", workerMiddleware, async (req, res) => {
+router.post("/submission", workerMiddleware, async (req, res) => {
     // @ts-ignore
     const userId = req.userId;
+    const body = req.body;
+    const parsedBody = createSubmissionInput.safeParse(body);
 
-    const task = await prismaClient.task.findFirst({
-        where: {
-            done: false,
-            submissions: {
-                none: {
-                    worker_id: userId
-                }
-            }
-        },
-        select:{
-            title: true,
-            options: true
+    if (parsedBody.success) {
+        const task = await getNextTask(Number(userId));
+        if (!task || task?.id !== Number(parsedBody.data.taskId)) {
+            return res.status(411).json({
+                message: "Incorrect task id"
+            })
         }
-    })
+
+        const amount = (Number(task.amount) / TOTAL_SUBMISSIONS).toString();
+
+        const submission = await prismaClient.submission.create({
+            data: {
+                option_id: Number(parsedBody.data.selection),
+                worker_id: userId,
+                task_id: Number(parsedBody.data.taskId),
+                amount
+            }
+        })
+
+        const nextTask = await getNextTask(Number(userId));
+        res.json({
+            nextTask,
+            amount
+        })
+
+    } else {
+        res.status(411).json({
+            message: "Incorrect inputs"
+        })
+            
+    }
+})
+
+// @ts-ignore
+router.get("/nextTask", workerMiddleware, async (req, res) => {
+    // @ts-ignore
+    const userId: string = req.userId;
+
+    const task = await getNextTask(Number(userId));
 
     if (!task) {
         res.status(411).json({   
