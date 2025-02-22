@@ -11,6 +11,56 @@ const router = Router();
 const prismaClient = new PrismaClient();
 
 // @ts-ignore
+router.post("/payout", workerMiddleware, async (req, res) => {
+    // @ts-ignore
+    const userId: string = req.userId;
+    const worker = await prismaClient.worker.findFirst({
+        where: {
+            id: Number(userId)
+        }
+    })
+
+    if (!worker) {
+        return res.status(403).json({
+            message: "User not found"
+        })
+    }
+
+    const address = worker.address;
+    const txnId = "0xasdasdsa";
+
+    await prismaClient.$transaction(async tx => {
+        await tx.worker.update({
+            where: {
+                id: Number(userId)
+            },
+            data: {
+                pending_amount: {
+                    decrement: worker.pending_amount
+                },
+                locked_amount: {
+                    increment: worker.pending_amount
+                }
+            }
+        })
+
+        await tx.payouts.create({
+            data: {
+                user_id: Number(userId),
+                amount: worker.pending_amount,
+                status: "Processing",
+                signature: txnId
+            }
+        })
+    })
+
+    res.json({
+        message: "Processing paout",
+        amount: worker.pending_amount
+    })
+})
+
+// @ts-ignore
 router.get("/balance", workerMiddleware, async (req, res) => {
     // @ts-ignore
     const userId: string = req.userId;
@@ -50,7 +100,7 @@ router.post("/submission", workerMiddleware, async (req, res) => {
                     option_id: Number(parsedBody.data.selection),
                     worker_id: userId,
                     task_id: Number(parsedBody.data.taskId),
-                    amount
+                    amount: Number(amount)
                 }
             })
 
